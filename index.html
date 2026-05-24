@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角形求三心動態幾何教學工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-600 rounded-lg shadow-lg text-white">
+                    <i class="fa-solid fa-compass text-2xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide text-white">幾何探索：三角形與三心動畫</h1>
+                    <p class="text-xs text-slate-400">支援 SSS / SAS / ASA / AAS / RHS 全等性質三角形演算法</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full border border-indigo-500/30">
+                    數學幾何
+                </span>
+                <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full border border-emerald-500/30">
+                    畫布優化版
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Side: Control Panel (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Step 1: Triangle Definition -->
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-700 pb-2">
+                    <span class="w-6 h-6 bg-indigo-600 text-white flex items-center justify-center rounded-full text-xs font-bold">1</span>
+                    <h2 class="text-lg font-bold text-white">定義三角形 (全等性質)</h2>
+                </div>
+                
+                <!-- Congruence Type Selector -->
+                <div class="grid grid-cols-5 gap-1 mb-4">
+                    <button id="btn-SSS" onclick="setCongruence('SSS')" class="py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-md border border-indigo-500 transition-all">SSS</button>
+                    <button id="btn-SAS" onclick="setCongruence('SAS')" class="py-2 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 transition-all">SAS</button>
+                    <button id="btn-ASA" onclick="setCongruence('ASA')" class="py-2 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 transition-all">ASA</button>
+                    <button id="btn-AAS" onclick="setCongruence('AAS')" class="py-2 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 transition-all">AAS</button>
+                    <button id="btn-RHS" onclick="setCongruence('RHS')" class="py-2 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 transition-all">RHS</button>
+                </div>
+
+                <!-- Input Fields (Dynamic based on selection) -->
+                <div id="inputs-container" class="space-y-4">
+                    <!-- Dynamic inputs will be inserted here by JS -->
+                </div>
+
+                <!-- Error Indicator -->
+                <div id="triangle-error" class="hidden mt-3 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-lg flex items-start gap-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                    <span>無法構成三角形，請調整輸入數值！(RHS 條件下斜邊必須大於一股)</span>
+                </div>
+
+                <button onclick="buildTriangle()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate"></i> 生成/更新三角形
+                </button>
+            </div>
+
+            <!-- Step 2: Choose Center -->
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-700 pb-2">
+                    <span class="w-6 h-6 bg-indigo-600 text-white flex items-center justify-center rounded-full text-xs font-bold">2</span>
+                    <h2 class="text-lg font-bold text-white">選擇要尋找的「心」</h2>
+                </div>
+
+                <div class="flex flex-col gap-2.5">
+                    <!-- Circumcenter Button -->
+                    <button id="btn-circum" onclick="setCenterType('circum')" class="flex items-center justify-between p-3 rounded-lg border text-left transition-all bg-indigo-600/20 border-indigo-500 text-indigo-300">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-300">
+                                <i class="fa-regular fa-circle"></i>
+                            </div>
+                            <div>
+                                <span class="font-bold text-sm block">外心 (Circumcenter)</span>
+                                <span class="text-xs text-indigo-400/80">三邊中垂線的交點</span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-circle-check text-indigo-400"></i>
+                    </button>
+
+                    <!-- Incenter Button -->
+                    <button id="btn-in" onclick="setCenterType('in')" class="flex items-center justify-between p-3 rounded-lg border text-left transition-all bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                <i class="fa-solid fa-circle-dot"></i>
+                            </div>
+                            <div>
+                                <span class="font-bold text-sm block text-white">內心 (Incenter)</span>
+                                <span class="text-xs text-slate-400">三個內角平分線的交點</span>
+                            </div>
+                        </div>
+                        <i class="fa-regular fa-circle text-slate-500"></i>
+                    </button>
+
+                    <!-- Centroid Button -->
+                    <button id="btn-centroid" onclick="setCenterType('centroid')" class="flex items-center justify-between p-3 rounded-lg border text-left transition-all bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </div>
+                            <div>
+                                <span class="font-bold text-sm block text-white">重心 (Centroid)</span>
+                                <span class="text-xs text-slate-400">三條中線的交點</span>
+                            </div>
+                        </div>
+                        <i class="fa-regular fa-circle text-slate-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Animation Speed Control -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl">
+                <label class="block text-sm font-medium text-slate-300 mb-2 flex justify-between">
+                    <span>動畫展示控制</span>
+                    <span id="speed-label" class="text-xs text-indigo-400 font-bold">一般速度</span>
+                </label>
+                <input type="range" id="speed-slider" min="1" max="3" value="2" class="w-full accent-indigo-500 bg-slate-700 rounded-lg appearance-none h-2 cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>慢速</span>
+                    <span>一般</span>
+                    <span>快速</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Side: Interactive Display Area & Math Explanations (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Canvas Visualizer Container -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl flex flex-col">
+                <!-- Toolbar above canvas -->
+                <div class="bg-slate-800/80 border-b border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-rose-500 rounded-full"></span>
+                        <span class="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+                        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                        <span class="text-xs font-semibold text-slate-400 ml-2 font-mono">GEOMETRY CANVAS</span>
+                    </div>
+                    <!-- Playback Controls -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="restartAnimation()" class="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> 重頭播放
+                        </button>
+                        <button id="btn-play-pause" onclick="togglePlay()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-pause"></i> 暫停
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Clean Canvas Wrapper (No overlay elements to obstruct the view) -->
+                <div class="relative w-full aspect-[4/3] bg-slate-950 flex items-center justify-center overflow-hidden">
+                    <canvas id="geometry-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <!-- Combined Animation Steps & Math Explanations Panel -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6 shadow-2xl">
+                <!-- Current Step Info Block (Relocated here from canvas to prevent obstruction) -->
+                <div class="mb-5 bg-slate-900/80 border border-slate-700 rounded-xl p-4 shadow-inner flex gap-4 items-start">
+                    <div class="bg-indigo-600 text-white px-2.5 py-1 rounded-md text-xs font-black tracking-wider shadow" id="anim-step-badge">
+                        步驟 1/4
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-base font-bold text-white mb-1" id="anim-step-title">建立三角形主體</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed font-medium animate-pulse" id="anim-step-desc">正在建置幾何參數...</p>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-bold text-slate-100 mb-3 flex items-center gap-2 pt-2 border-t border-slate-700">
+                    <i class="fa-solid fa-graduation-cap text-indigo-400"></i>
+                    幾何特質與數學定理剖析
+                </h3>
+                
+                <!-- Dynamic Center Properties Card -->
+                <div id="properties-explanation" class="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed space-y-4">
+                    <!-- Dynamic details loaded here based on chosen center -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>三角形三心動態幾何探索教學軟體 © 2026. 採用 HTML5 Canvas 與 Tailwind CSS 動態建構</p>
+    </footer>
+
+    <!-- JS Geometric Calculation and Animation Engine -->
+    <script>
+        // --- 1. State Management & Constants ---
+        let config = {
+            congruence: 'SSS', // SSS, SAS, ASA, AAS, RHS
+            centerType: 'circum', // circum, in, centroid
+            inputs: {},
+            speed: 2, // 1: slow, 2: normal, 3: fast
+            isPlaying: true
+        };
+
+        let tri = {
+            A: {x: 0, y: 0},
+            B: {x: 0, y: 0},
+            C: {x: 0, y: 0},
+            sides: {a: 0, b: 0, c: 0},
+            angles: {A: 0, B: 0, C: 0}
+        };
+
+        let screenPts = { A: {x:0, y:0}, B: {x:0, y:0}, C: {x:0, y:0} };
+
+        let anim = {
+            progress: 0, 
+            maxSteps: 4,
+            currentStep: 0,
+            transitionSpeed: 0.005
+        };
+
+        const inputTemplates = {
+            SSS: [
+                { id: 'side_c', label: '邊長 c (AB)', min: 1, max: 20, default: 12, step: 0.5 },
+                { id: 'side_a', label: '邊長 a (BC)', min: 1, max: 20, default: 10, step: 0.5 },
+                { id: 'side_b', label: '邊長 b (AC)', min: 1, max: 20, default: 8, step: 0.5 }
+            ],
+            SAS: [
+                { id: 'side_c', label: '邊長 c (AB)', min: 1, max: 20, default: 12, step: 0.5 },
+                { id: 'angle_B', label: '夾角 B (度)', min: 5, max: 175, default: 60, step: 1 },
+                { id: 'side_a', label: '邊長 a (BC)', min: 1, max: 20, default: 10, step: 0.5 }
+            ],
+            ASA: [
+                { id: 'angle_B', label: '角 B (度)', min: 5, max: 175, default: 60, step: 1 },
+                { id: 'side_c', label: '邊長 c (AB)', min: 1, max: 20, default: 12, step: 0.5 },
+                { id: 'angle_A', label: '角 A (度)', min: 5, max: 175, default: 50, step: 1 }
+            ],
+            AAS: [
+                { id: 'angle_A', label: '角 A (度)', min: 5, max: 175, default: 45, step: 1 },
+                { id: 'angle_B', label: '角 B (度)', min: 5, max: 175, default: 75, step: 1 },
+                { id: 'side_a', label: '對邊 a (BC)', min: 1, max: 20, default: 10, step: 0.5 }
+            ],
+            RHS: [
+                { id: 'rhs_c', label: '斜邊 c (AB)', min: 5, max: 20, default: 13, step: 0.5 },
+                { id: 'rhs_a', label: '一股 a (BC)', min: 1, max: 19, default: 12, step: 0.5 }
+            ]
+        };
+
+        const canvas = document.getElementById('geometry-canvas');
+        const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1;
+
+        // --- 2. Startup Initialization ---
+        window.onload = function() {
+            setCongruence('SSS');
+            setupCanvasSize();
+            setupSpeedController();
+            requestAnimationFrame(animationLoop);
+        };
+
+        window.onresize = function() {
+            setupCanvasSize();
+        };
+
+        function setupCanvasSize() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        function setupSpeedController() {
+            const slider = document.getElementById('speed-slider');
+            const label = document.getElementById('speed-label');
+            slider.addEventListener('input', function(e) {
+                config.speed = parseInt(e.target.value);
+                if (config.speed === 1) {
+                    label.innerText = '慢速';
+                    anim.transitionSpeed = 0.002;
+                } else if (config.speed === 2) {
+                    label.innerText = '一般速度';
+                    anim.transitionSpeed = 0.005;
+                } else {
+                    label.innerText = '快速';
+                    anim.transitionSpeed = 0.015;
+                }
+            });
+        }
+
+        // --- 3. UI Controller Functions ---
+        function setCongruence(type) {
+            config.congruence = type;
+            
+            ['SSS', 'SAS', 'ASA', 'AAS', 'RHS'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === type) {
+                    btn.className = "py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-md border border-indigo-500 transition-all";
+                } else {
+                    btn.className = "py-2 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600 transition-all";
+                }
+            });
+
+            const container = document.getElementById('inputs-container');
+            container.innerHTML = '';
+            
+            inputTemplates[type].forEach(tmpl => {
+                const div = document.createElement('div');
+                div.className = "space-y-1.5";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <label for="${tmpl.id}" class="text-xs font-bold text-slate-300">${tmpl.label}</label>
+                        <span id="val-${tmpl.id}" class="text-xs text-indigo-400 font-bold">${tmpl.default}</span>
+                    </div>
+                    <input type="range" id="${tmpl.id}" min="${tmpl.min}" max="${tmpl.max}" value="${tmpl.default}" step="${tmpl.step}"
+                        class="w-full accent-indigo-500 bg-slate-700 rounded-lg appearance-none h-1.5 cursor-pointer"
+                        oninput="onInputChange('${tmpl.id}', this.value)">
+                `;
+                container.appendChild(div);
+                config.inputs[tmpl.id] = tmpl.default;
+            });
+
+            buildTriangle();
+        }
+
+        function onInputChange(id, value) {
+            document.getElementById(`val-${id}`).innerText = value;
+            config.inputs[id] = parseFloat(value);
+            buildTriangle();
+        }
+
+        function setCenterType(type) {
+            config.centerType = type;
+            const centers = ['circum', 'in', 'centroid'];
+            centers.forEach(c => {
+                const btn = document.getElementById(`btn-${c}`);
+                const icon = btn.querySelector('.fa-circle-check, .fa-circle');
+                if (c === type) {
+                    btn.className = "flex items-center justify-between p-3 rounded-lg border text-left transition-all bg-indigo-600/20 border-indigo-500 text-indigo-300";
+                    if (icon) icon.className = "fa-solid fa-circle-check text-indigo-400";
+                } else {
+                    btn.className = "flex items-center justify-between p-3 rounded-lg border text-left transition-all bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700";
+                    if (icon) icon.className = "fa-regular fa-circle text-slate-500";
+                }
+            });
+            updateExplanation();
+            restartAnimation();
+        }
+
+        function togglePlay() {
+            config.isPlaying = !config.isPlaying;
+            const btn = document.getElementById('btn-play-pause');
+            if (config.isPlaying) {
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i> 暫停`;
+                btn.className = "p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1";
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-play"></i> 播放`;
+                btn.className = "p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1";
+            }
+        }
+
+        function restartAnimation() {
+            anim.progress = 0;
+            anim.currentStep = 0;
+        }
+
+        // --- 4. Triangle Solver Engine ---
+        function buildTriangle() {
+            let errorDiv = document.getElementById('triangle-error');
+            errorDiv.classList.add('hidden');
+
+            let isValid = true;
+            let a = 0, b = 0, c = 0;
+            let angA = 0, angB = 0, angC = 0;
+            const inputs = config.inputs;
+
+            try {
+                if (config.congruence === 'SSS') {
+                    c = inputs.side_c;
+                    a = inputs.side_a;
+                    b = inputs.side_b;
+                    if ((a + b <= c) || (a + c <= b) || (b + c <= a)) {
+                        isValid = false;
+                    } else {
+                        angA = Math.acos((b*b + c*c - a*a) / (2 * b * c));
+                        angB = Math.acos((a*a + c*c - b*b) / (2 * a * c));
+                        angC = Math.PI - angA - angB;
+                    }
+                } 
+                else if (config.congruence === 'SAS') {
+                    c = inputs.side_c;
+                    angB = inputs.angle_B * Math.PI / 180;
+                    a = inputs.side_a;
+                    b = Math.sqrt(a*a + c*c - 2*a*c*Math.cos(angB));
+                    angA = Math.acos((b*b + c*c - a*a) / (2 * b * c));
+                    angC = Math.PI - angA - angB;
+                } 
+                else if (config.congruence === 'ASA') {
+                    angB = inputs.angle_B * Math.PI / 180;
+                    c = inputs.side_c;
+                    angA = inputs.angle_A * Math.PI / 180;
+                    if (angA + angB >= Math.PI) {
+                        isValid = false;
+                    } else {
+                        angC = Math.PI - angA - angB;
+                        a = c * Math.sin(angA) / Math.sin(angC);
+                        b = c * Math.sin(angB) / Math.sin(angC);
+                    }
+                } 
+                else if (config.congruence === 'AAS') {
+                    angA = inputs.angle_A * Math.PI / 180;
+                    angB = inputs.angle_B * Math.PI / 180;
+                    a = inputs.side_a;
+                    if (angA + angB >= Math.PI) {
+                        isValid = false;
+                    } else {
+                        angC = Math.PI - angA - angB;
+                        c = a * Math.sin(angC) / Math.sin(angA);
+                        b = a * Math.sin(angB) / Math.sin(angA);
+                    }
+                }
+                else if (config.congruence === 'RHS') {
+                    c = inputs.rhs_c; // AB
+                    a = inputs.rhs_a; // BC
+                    if (c <= a) {
+                        isValid = false;
+                    } else {
+                        b = Math.sqrt(c*c - a*a); // AC by Pythagorean theorem
+                        angC = Math.PI / 2; // 90 deg
+                        angA = Math.asin(a / c);
+                        angB = Math.PI / 2 - angA;
+                    }
+                }
+
+                if (!isValid || isNaN(a) || isNaN(b) || isNaN(c)) throw new Error("Invalid parameters");
+
+                // Base positioning
+                tri.B = { x: 0, y: 0 };
+                tri.C = { x: a, y: 0 };
+                tri.A = {
+                    x: c * Math.cos(angB),
+                    y: c * Math.sin(angB)
+                };
+
+                tri.sides = { a, b, c };
+                tri.angles = { 
+                    A: angA * 180 / Math.PI, 
+                    B: angB * 180 / Math.PI, 
+                    C: angC * 180 / Math.PI 
+                };
+
+                calculateScreenPoints();
+                updateExplanation();
+                restartAnimation();
+
+            } catch(e) {
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function calculateScreenPoints() {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            const xs = [tri.A.x, tri.B.x, tri.C.x];
+            const ys = [tri.A.y, tri.B.y, tri.C.y];
+            const minX = Math.min(...xs), maxX = Math.max(...xs);
+            const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+            const padding = Math.min(width, height) * 0.22;
+            const scale = Math.min((width - padding * 2) / ((maxX - minX) || 1), (height - padding * 2) / ((maxY - minY) || 1));
+
+            const analyticalCentroidX = (tri.A.x + tri.B.x + tri.C.x) / 3;
+            const analyticalCentroidY = (tri.A.y + tri.B.y + tri.C.y) / 3;
+
+            const transform = (p) => {
+                return {
+                    x: (width / 2) + (p.x - analyticalCentroidX) * scale,
+                    y: (height / 2) - (p.y - analyticalCentroidY) * scale
+                };
+            };
+
+            screenPts.A = transform(tri.A);
+            screenPts.B = transform(tri.B);
+            screenPts.C = transform(tri.C);
+        }
+
+        // --- 5. Geometry Math Formulas ---
+        function getCircumcenter() {
+            const {A, B, C} = screenPts;
+            const d = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
+            const ux = ((A.x*A.x + A.y*A.y) * (B.y - C.y) + (B.x*B.x + B.y*B.y) * (C.y - A.y) + (C.x*C.x + C.y*C.y) * (A.y - B.y)) / d;
+            const uy = ((A.x*A.x + A.y*A.y) * (C.x - B.x) + (B.x*B.x + B.y*B.y) * (A.x - C.x) + (C.x*C.x + C.y*C.y) * (B.x - A.x)) / d;
+            const center = { x: ux, y: uy };
+            return { center, radius: Math.hypot(center.x - A.x, center.y - A.y) };
+        }
+
+        // Angle B Bisector construction
+        function getIncenter() {
+            const {A, B, C} = screenPts;
+            const a = Math.hypot(B.x - C.x, B.y - C.y);
+            const b = Math.hypot(A.x - C.x, A.y - C.y);
+            const c = Math.hypot(A.x - B.x, A.y - B.y);
+            const perimeter = a + b + c;
+            const center = {
+                x: (a * A.x + b * B.x + c * C.x) / perimeter,
+                y: (a * A.y + b * B.y + c * C.y) / perimeter
+            };
+            const area = Math.abs((A.x*(B.y - C.y) + B.x*(C.y - A.y) + C.x*(A.y - B.y)) / 2);
+            return { center, radius: (2 * area) / perimeter };
+        }
+
+        function getCentroid() {
+            return { center: { x: (screenPts.A.x + screenPts.B.x + screenPts.C.x) / 3, y: (screenPts.A.y + screenPts.B.y + screenPts.C.y) / 3 } };
+        }
+
+        // --- 6. Active Drawing Helpers ---
+        function drawPoint(p, label, color, radius = 5) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            if (label) {
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 13px Noto Sans TC';
+                ctx.fillText(label, p.x + 8, p.y + 4);
+            }
+        }
+
+        function drawLine(p1, p2, color, width = 2, dashed = false) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.setLineDash(dashed ? [5, 5] : []);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawCompassArc(center, target, color, progress) {
+            const radius = Math.hypot(target.x - center.x, target.y - center.y);
+            const startAngle = Math.atan2(target.y - center.y, target.x - center.x) - 0.35;
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, startAngle, startAngle + 0.7 * progress);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function lerp(start, end, amt) { return (1 - amt) * start + amt * end; }
+        function lerpPoint(p1, p2, amt) { return { x: lerp(p1.x, p2.x, amt), y: lerp(p1.y, p2.y, amt) }; }
+        function midpoint(p1, p2) { return { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 }; }
+        
+        function getPerpendicularVector(p1, p2, length) {
+            const dx = p2.x - p1.x, dy = p2.y - p1.y;
+            const len = Math.hypot(dx, dy);
+            return { x: (-dy / len) * length, y: (dx / len) * length };
+        }
+
+        function getBisectorRay(vertex, pLeft, pRight, length) {
+            const dL = { x: pLeft.x - vertex.x, y: pLeft.y - vertex.y };
+            const dR = { x: pRight.x - vertex.x, y: pRight.y - vertex.y };
+            const lenL = Math.hypot(dL.x, dL.y), lenR = Math.hypot(dR.x, dR.y);
+            let bx = (dL.x / lenL) + (dR.x / lenR), by = (dL.y / lenL) + (dR.y / lenR);
+            const lenB = Math.hypot(bx, by);
+            return { x: (bx / lenB) * length, y: (by / lenB) * length };
+        }
+
+        // --- 7. Animation Main Engine ---
+        function animationLoop() {
+            const rect = canvas.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            if (config.isPlaying) {
+                anim.progress += anim.transitionSpeed;
+                if (anim.progress > anim.maxSteps) anim.progress = 0;
+            }
+
+            anim.currentStep = Math.floor(anim.progress);
+            const stepLocalProgress = anim.progress - anim.currentStep;
+
+            updateStepDescription(anim.currentStep);
+
+            const {A, B, C} = screenPts;
+
+            // Base Triangle render logic
+            if (anim.currentStep === 0) {
+                const pB_to_C = lerpPoint(B, C, Math.min(stepLocalProgress * 2, 1));
+                drawLine(B, pB_to_C, '#64748b', 2.5);
+                if (stepLocalProgress > 0.5) {
+                    drawLine(C, lerpPoint(C, A, Math.min((stepLocalProgress - 0.5) * 2, 1)), '#64748b', 2.5);
+                }
+                if (stepLocalProgress > 0.8) {
+                    drawLine(A, lerpPoint(A, B, Math.min((stepLocalProgress - 0.8) * 5, 1)), '#64748b', 2.5);
+                }
+                drawPoint(B, 'B', '#38bdf8');
+                if (stepLocalProgress > 0.5) drawPoint(C, 'C' + (config.congruence==='RHS'?' (90°)':''), '#38bdf8');
+                if (stepLocalProgress > 0.9) drawPoint(A, 'A', '#38bdf8');
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(A.x, A.y);
+                ctx.lineTo(B.x, B.y);
+                ctx.lineTo(C.x, C.y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
+                ctx.fill();
+                drawLine(A, B, '#64748b', 2);
+                drawLine(B, C, '#64748b', 2);
+                drawLine(C, A, '#64748b', 2);
+                drawPoint(A, 'A', '#38bdf8');
+                drawPoint(B, 'B', '#38bdf8');
+                drawPoint(C, 'C' + (config.congruence==='RHS'?' (直角)':''), '#38bdf8');
+            }
+
+            // Sub-step dynamic calculations
+            if (anim.currentStep >= 1) {
+                if (config.centerType === 'circum') drawCircumcenterSteps(stepLocalProgress);
+                else if (config.centerType === 'in') drawIncenterSteps(stepLocalProgress);
+                else if (config.centerType === 'centroid') drawCentroidSteps(stepLocalProgress);
+            }
+
+            requestAnimationFrame(animationLoop);
+        }
+
+        // --- 8. Status Descriptor Engine ---
+        function updateStepDescription(step) {
+            const badge = document.getElementById('anim-step-badge');
+            const title = document.getElementById('anim-step-title');
+            const desc = document.getElementById('anim-step-desc');
+
+            badge.innerText = `步驟 ${step + 1}/4`;
+
+            if (step === 0) {
+                title.innerText = "建構三角形主體";
+                desc.innerText = `已繪製出滿足性質的幾何圖形。目前各內角：A = ${tri.angles.A.toFixed(1)}°，B = ${tri.angles.B.toFixed(1)}°，C = ${tri.angles.C.toFixed(1)}°。`;
+            } 
+            else if (step === 1) {
+                if (config.centerType === 'circum') {
+                    title.innerText = "步驟 1：建構邊 BC 的垂直平分線";
+                    desc.innerText = "以大於半邊長的半徑，分別以 B、C 為圓心在兩側繪製交會弧線，將兩交點連線即為 BC 的中垂線。";
+                } else if (config.centerType === 'in') {
+                    title.innerText = "步驟 1：建構角 B 的內角平分線";
+                    desc.innerText = "以角頂點 B 為圓心畫弧取得兩邊交點，再由此兩交點為圓心以相同半徑畫弧求得對應中心，連回頂點 B。";
+                } else {
+                    title.innerText = "步驟 1：繪製頂點 A 對邊的中線";
+                    desc.innerText = "標定 BC 邊的幾何中點 D1，將對角頂點 A 與 D1 相連，形成第一條中線段。";
+                }
+            } 
+            else if (step === 2) {
+                if (config.centerType === 'circum') {
+                    title.innerText = "步驟 2：建構邊 AB 的垂直平分線";
+                    desc.innerText = "用相同的方法繪製出 AB 邊的中垂線。兩條中垂線將在平面上相交於一點（此點即為外心核心）。";
+                } else if (config.centerType === 'in') {
+                    title.innerText = "步驟 2：建構角 C 的內角平分線";
+                    desc.innerText = "利用尺規作圖軌跡，找出角 C 的角平分線。其與前一條角平分線在三角形內部相交的點就是內心。";
+                } else {
+                    title.innerText = "步驟 2：繪製頂點 B 對邊的中線";
+                    desc.innerText = "找出 AC 邊的中點 D2，與頂點 B 連線。此中線與第一條中線的交會處，就是重心的座標點。";
+                }
+            } 
+            else if (step === 3) {
+                if (config.centerType === 'circum') {
+                    title.innerText = "完美落幕：外心定位與外接圓性質展現";
+                    desc.innerText = "外心 O 到三頂點等距 (OA = OB = OC)。以此距離為半徑繪製出外接圓。若此時為直角三角形（如 RHS），外心會完美契合在斜邊 AB 的中點上！";
+                } else if (config.centerType === 'in') {
+                    title.innerText = "完美落幕：內心定位與內切圓性質展現";
+                    desc.innerText = "內心 I 到三邊的垂直距離均相等（即內切圓半徑 $r$）。以此半徑繪製的圓會與三角形的三邊各有一個完美切點。";
+                } else {
+                    title.innerText = "完結：重心共點特質與 2:1 定理驗證";
+                    desc.innerText = "重心 G 會將每條中線分成 2:1 的黃金比例（頂點到重心 : 重心到邊中點 = 2 : 1）。這也是薄片物體的重力平衡平衡點。";
+                }
+            }
+        }
+
+        // --- 9. Vector Animation Geometry Functions ---
+        function drawCircumcenterSteps(localProg) {
+            const {A, B, C} = screenPts;
+            const { center, radius } = getCircumcenter();
+            const midBC = midpoint(B, C), midAB = midpoint(A, B);
+            const vBC = getPerpendicularVector(B, C, 150), vAB = getPerpendicularVector(A, B, 150);
+
+            if (anim.currentStep === 1) {
+                drawCompassArc(B, lerpPoint(B, C, 0.6), '#f43f5e', localProg);
+                drawCompassArc(C, lerpPoint(C, B, 0.6), '#f43f5e', localProg);
+                drawLine(lerpPoint(midBC, { x: midBC.x + vBC.x, y: midBC.y + vBC.y }, localProg), lerpPoint(midBC, { x: midBC.x - vBC.x, y: midBC.y - vBC.y }, localProg), '#f43f5e', 2);
+                drawPoint(midBC, 'BC中點', '#f43f5e', 3);
+            }
+            if (anim.currentStep === 2) {
+                drawLine({ x: midBC.x + vBC.x, y: midBC.y + vBC.y }, { x: midBC.x - vBC.x, y: midBC.y - vBC.y }, 'rgba(244, 63, 94, 0.4)', 1.5);
+                drawCompassArc(A, lerpPoint(A, B, 0.6), '#10b981', localProg);
+                drawCompassArc(B, lerpPoint(B, A, 0.6), '#10b981', localProg);
+                drawLine(lerpPoint(midAB, { x: midAB.x + vAB.x, y: midAB.y + vAB.y }, localProg), lerpPoint(midAB, { x: midAB.x - vAB.x, y: midAB.y - vAB.y }, localProg), '#10b981', 2);
+                drawPoint(midAB, 'AB中點', '#10b981', 3);
+            }
+            if (anim.currentStep === 3) {
+                drawLine({ x: midBC.x + vBC.x, y: midBC.y + vBC.y }, { x: midBC.x - vBC.x, y: midBC.y - vBC.y }, 'rgba(244, 63, 94, 0.2)', 1);
+                drawLine({ x: midAB.x + vAB.x, y: midAB.y + vAB.y }, { x: midAB.x - vAB.x, y: midAB.y - vAB.y }, 'rgba(16, 185, 129, 0.2)', 1);
+                drawLine(center, A, '#e2e8f0', 1, true);
+                drawLine(center, B, '#e2e8f0', 1, true);
+                drawLine(center, C, '#e2e8f0', 1, true);
+
+                ctx.beginPath();
+                ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI * localProg);
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                drawPoint(center, '外心 O', '#6366f1', 6);
+            }
+        }
+
+        function drawIncenterSteps(localProg) {
+            const {A, B, C} = screenPts;
+            const { center, radius } = getIncenter();
+            const rayB = getBisectorRay(B, A, C, 225), rayC = getBisectorRay(C, A, B, 225);
+
+            if (anim.currentStep === 1) {
+                ctx.beginPath();
+                ctx.arc(B.x, B.y, 25, Math.atan2(A.y-B.y, A.x-B.x), Math.atan2(C.y-B.y, C.x-B.x));
+                ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.stroke();
+                drawLine(B, lerpPoint(B, { x: B.x + rayB.x, y: B.y + rayB.y }, localProg), '#f59e0b', 2);
+            }
+            if (anim.currentStep === 2) {
+                drawLine(B, { x: B.x + rayB.x, y: B.y + rayB.y }, 'rgba(245, 158, 11, 0.4)', 1.5);
+                ctx.beginPath();
+                ctx.arc(C.x, C.y, 25, Math.atan2(B.y-C.y, B.x-C.x), Math.atan2(A.y-C.y, A.x-C.x));
+                ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 1.5; ctx.stroke();
+                drawLine(C, lerpPoint(C, { x: C.x + rayC.x, y: C.y + rayC.y }, localProg), '#ec4899', 2);
+            }
+            if (anim.currentStep === 3) {
+                drawLine(B, { x: B.x + rayB.x, y: B.y + rayB.y }, 'rgba(245, 158, 11, 0.2)', 1);
+                drawLine(C, { x: C.x + rayC.x, y: C.y + rayC.y }, 'rgba(236, 72, 153, 0.2)', 1);
+                drawLine(center, { x: center.x, y: B.y }, '#a7f3d0', 1, true);
+
+                ctx.beginPath();
+                ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI * localProg);
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                drawPoint(center, '內心 I', '#10b981', 6);
+            }
+        }
+
+        function drawCentroidSteps(localProg) {
+            const {A, B, C} = screenPts;
+            const { center } = getCentroid();
+            const midBC = midpoint(B, C), midAC = midpoint(A, C);
+
+            if (anim.currentStep === 1) {
+                drawPoint(midBC, 'D1 (BC中點)', '#ef4444', 4.5);
+                drawLine(A, lerpPoint(A, midBC, localProg), '#ef4444', 2.5);
+            }
+            if (anim.currentStep === 2) {
+                drawLine(A, midBC, 'rgba(239, 68, 68, 0.4)', 1.5);
+                drawPoint(midBC, 'D1', 'rgba(239, 68, 68, 0.4)', 3.5);
+                drawPoint(midAC, 'D2 (AC中點)', '#eab308', 4.5);
+                drawLine(B, lerpPoint(B, midAC, localProg), '#eab308', 2.5);
+            }
+            if (anim.currentStep === 3) {
+                drawLine(A, midBC, '#ef4444', 1.5);
+                drawLine(B, midAC, '#eab308', 1.5);
+                drawPoint(midBC, 'D1', '#ef4444', 3.5);
+                drawPoint(midAC, 'D2', '#eab308', 3.5);
+
+                if (localProg > 0.5) {
+                    drawLine(A, center, '#8b5cf6', 3.5);
+                    drawLine(center, midBC, '#ec4899', 3.5);
+                    
+                    ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 11px Noto Sans TC';
+                    const m1 = lerpPoint(A, center, 0.5), m2 = lerpPoint(center, midBC, 0.5);
+                    ctx.fillText("2 份", m1.x - 20, m1.y);
+                    ctx.fillText("1 份", m2.x - 20, m2.y);
+                }
+                drawPoint(center, '重心 G', '#8b5cf6', 6.5);
+            }
+        }
+
+        // --- 10. Document Content Update Engine ---
+        function updateExplanation() {
+            const container = document.getElementById('properties-explanation');
+            
+            if (config.centerType === 'circum') {
+                container.innerHTML = `
+                    <div class="bg-indigo-950/40 p-4 rounded-xl border border-indigo-500/20 mb-4">
+                        <div class="text-sm font-bold text-indigo-400 mb-1">外心 (Circumcenter) 的性質</div>
+                        <p class="text-xs text-slate-300">
+                            三角形<b>三邊中垂線</b>的交點。到三個頂點等距離 ($OA = OB = OC$)。
+                        </p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <p><b class="text-indigo-300">RHS 專屬幾何特質：</b></p>
+                        <div class="p-3 bg-slate-900/60 rounded border border-slate-700 text-slate-300">
+                            當你使用 <b>RHS</b> 建構直角三角形時，你會觀察到一個重要的幾何定理：
+                            <span class="text-amber-400 font-bold">直角三角形的外心必定落在斜邊的中點上！</span><br>
+                            此時，斜邊長度剛好等於外接圓的直徑 ($c = 2R$)。這也說明了「直角三角形斜邊上的中線等於斜邊的一半」。
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (config.centerType === 'in') {
+                container.innerHTML = `
+                    <div class="bg-emerald-950/40 p-4 rounded-xl border border-emerald-500/20 mb-4">
+                        <div class="text-sm font-bold text-emerald-400 mb-1">內心 (Incenter) 的性質</div>
+                        <p class="text-xs text-slate-300">
+                            三角形<b>三個內角平分線</b>的交點。到三條邊的垂直距離相等（即內切圓半徑 $r$）。
+                        </p>
+                    </div>
+                    <div class="space-y-2 text-xs text-slate-300">
+                        <p><b class="text-emerald-300">幾何定理：</b></p>
+                        <li>不論三角形形狀如何變化（包括 RHS 直角三角形），內心<b>永遠位於三角形內部</b>。</li>
+                        <li>$\\text{三角形面積 } A = \\frac{1}{2} r (a + b + c)$。</li>
+                    </div>
+                `;
+            } 
+            else if (config.centerType === 'centroid') {
+                container.innerHTML = `
+                    <div class="bg-amber-950/40 p-4 rounded-xl border border-amber-500/20 mb-4">
+                        <div class="text-sm font-bold text-amber-400 mb-1">重心 (Centroid) 的性質</div>
+                        <p class="text-xs text-slate-300">
+                            三角形<b>三條中線</b>的交點。
+                        </p>
+                    </div>
+                    <div class="space-y-2 text-xs text-slate-300">
+                        <p><b class="text-amber-300">核心定理：</b></p>
+                        <li>重心將中線分成 $2:1$ 的比例。</li>
+                        <li>三中線切出的六個小三角形面積全部相等。在物理學上，此處即為勻質薄板的「平衡中心」。</li>
+                    </div>
+                `;
+            }
+
+            if (window.MathJax) MathJax.typesetPromise([container]);
+        }
+    </script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>
